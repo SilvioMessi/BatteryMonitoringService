@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<manifest xmlns="http://tizen.org/ns/packages" api-version="4.0" package="it.silviomessi.batterymonitoringservice" version="0.0.1">
+    <author>Silvio Messi</author>
+    <profile name="wearable"/>
+    <service-application appid="it.silviomessi.batterymonitoringservice" auto-restart="true" exec="batterymonitoringservice" multiple="false" nodisplay="true" taskmanage="true" type="capp">
+        <label>Battery Monitoring Service</label>
+        <icon>batterymonitoringservice.png</icon>
+    </service-application>
+</manifest>
