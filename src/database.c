@@ -103,7 +103,7 @@ void select_request_cb(int request_id, data_control_h provider,
 		if (error_code != DATA_CONTROL_ERROR_NONE)
 			dlog_print(DLOG_ERROR, LOG_TAG,
 					"select_send_result failed with error: %d", error_code);
-		dlog_print(DLOG_INFO, LOG_TAG,
+		dlog_print(DLOG_DEBUG, LOG_TAG,
 				"select_request_cb send back result successfully");
 	}
 
@@ -115,7 +115,7 @@ void select_request_cb(int request_id, data_control_h provider,
 }
 
 void initialize_datacontrol_provider() {
-	dlog_print(DLOG_INFO, LOG_TAG, "initialize_datacontrol_provider");
+	dlog_print(DLOG_DEBUG, LOG_TAG, "initialize_datacontrol_provider");
 	int error_code = init_db();
 	if (error_code != SQLITE_OK)
 		return;
@@ -129,5 +129,5 @@ void initialize_datacontrol_provider() {
 				"data_control_provider_sql_register_cb failed with error: %d",
 				error_code);
 	else
-		dlog_print(DLOG_INFO, LOG_TAG, "provider SQL register success");
+		dlog_print(DLOG_DEBUG, LOG_TAG, "provider SQL register success");
 }
