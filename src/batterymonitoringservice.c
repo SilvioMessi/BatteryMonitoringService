@@ -41,13 +41,13 @@ static Eina_Bool timeout_func(void *data) {
 
 bool app_create(void *data) {
 	dlog_print(DLOG_DEBUG, LOG_TAG, "app_create");
+	initialize_datacontrol_provider();
+	ecore_timer_add(60*15, timeout_func, NULL);
 	return true;
 }
 
 void app_control(app_control_h app_control, void *data) {
 	dlog_print(DLOG_DEBUG, LOG_TAG, "app_control");
-	initialize_datacontrol_provider();
-	ecore_timer_add(60*15, timeout_func, NULL);
 }
 
 void app_terminate(void *data) {
