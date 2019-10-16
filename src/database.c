@@ -14,7 +14,6 @@
 
 static sqlite3 *database; // DB instance
 data_control_provider_sql_cb *sql_callback; // data control callbacks
-int n_samples = 0;
 
 int opendb() {
 	// create DB file path
@@ -78,29 +77,6 @@ int insert_sample(char *time, int battery_percentage, int battery_is_charging) {
 	return execute_query(sql, NULL);
 }
 
-static int num_of_samples_cb(void *data, int argc, char **argv, char **col) {
-	n_samples = atoi(argv[0]);
-	return 0;
-}
-
-int num_of_samples(int *num_of_samples) {
-	int error_code;
-
-	// create SELECT COUNT(*) query
-	char *sql = "SELECT COUNT(*) FROM "TABLE_NAME";";
-	dlog_print(DLOG_DEBUG, LOG_TAG, "select count(*) query: %s", sql);
-	error_code = execute_query(sql, num_of_samples_cb);
-
-	// return value(s) got from the query
-	if (error_code != SQLITE_OK) {
-		*num_of_samples = -1;
-	} else {
-		dlog_print(DLOG_DEBUG, LOG_TAG, "number of samples: %d", n_samples);
-		*num_of_samples = n_samples;
-	}
-	return error_code;
-}
-
 void select_request_cb(int request_id, data_control_h provider,
 		const char **column_list, int column_count, const char *where,
 		const char *order, void *user_data) {
@@ -140,17 +116,18 @@ void select_request_cb(int request_id, data_control_h provider,
 
 void initialize_datacontrol_provider() {
 	dlog_print(DLOG_INFO, LOG_TAG, "initialize_datacontrol_provider");
-	int result = init_db();
-	if (result != SQLITE_OK)
+	int error_code = init_db();
+	if (error_code != SQLITE_OK)
 		return;
 
 	sql_callback = (data_control_provider_sql_cb *) malloc(
 			sizeof(data_control_provider_sql_cb));
 	sql_callback->select_cb = select_request_cb;
-	result = data_control_provider_sql_register_cb(sql_callback, NULL);
-	if (result != DATA_CONTROL_ERROR_NONE)
+	error_code = data_control_provider_sql_register_cb(sql_callback, NULL);
+	if (error_code != DATA_CONTROL_ERROR_NONE)
 		dlog_print(DLOG_ERROR, LOG_TAG,
-				"data_control_provider_sql_register_cb failed with error: %d", result);
+				"data_control_provider_sql_register_cb failed with error: %d",
+				error_code);
 	else
 		dlog_print(DLOG_INFO, LOG_TAG, "provider SQL register success");
 }

@@ -11,8 +11,6 @@
 
 int insert_sample(char *time, int battery_percentage, int battery_is_charging);
 
-int num_of_samples(int *num_of_samples);
-
 void initialize_datacontrol_provider();
 
 #endif /* DATABASE_H_ */
