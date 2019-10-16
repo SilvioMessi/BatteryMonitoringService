@@ -9,10 +9,10 @@
 #define COL_BATTERY_IS_CHARGING "BATTERY_IS_CHARGING"
 #define QUERYLEN 500 // query max length
 
-int init_db();
-
 int insert_sample(char *time, int battery_percentage, int battery_is_charging);
 
 int num_of_samples(int *num_of_samples);
+
+void initialize_datacontrol_provider();
 
 #endif /* DATABASE_H_ */

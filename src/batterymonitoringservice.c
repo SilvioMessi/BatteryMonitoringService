@@ -46,7 +46,7 @@ bool app_create(void *data) {
 
 void app_control(app_control_h app_control, void *data) {
 	dlog_print(DLOG_DEBUG, LOG_TAG, "app_control");
-	init_db();
+	initialize_datacontrol_provider();
 	ecore_timer_add(60*15, timeout_func, NULL);
 }
 

@@ -5,5 +5,9 @@
     <service-application appid="it.silviomessi.batterymonitoringservice" auto-restart="true" exec="batterymonitoringservice" multiple="false" nodisplay="true" taskmanage="true" type="capp">
         <label>Battery Monitoring Service</label>
         <icon>batterymonitoringservice.png</icon>
+        <datacontrol access="ReadOnly" providerid="http://batterymonitoringservice.com/datacontrol/provider/batterymonitoringservice" type="Sql"/>
     </service-application>
+    <privileges>
+        <privilege>http://tizen.org/privilege/datasharing</privilege>
+    </privileges>
 </manifest>

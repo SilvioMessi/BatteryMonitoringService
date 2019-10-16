@@ -1,16 +1,19 @@
-// thanks to https://developer.tizen.org/ko/forums/native-application-development/complete-tutorial-sqlite-database-crud-operation-and-data-access-tizen-native-application
+// for sqlite 3 thanks to https://developer.tizen.org/ko/forums/native-application-development/complete-tutorial-sqlite-database-crud-operation-and-data-access-tizen-native-application
+// for data control thanks to https://developer.tizen.org/ko/development/guides/native-application/application-management/application-data-exchange/data-control
 
 #include <batterymonitoringservice.h>
 #include <string.h>
 #include <dlog.h>
 #include <database.h>
+#include <data_control.h>
 #include <storage.h>
 #include <sqlite3.h>
 #include <storage.h>
 #include <Elementary.h>
 #include <service_app.h>
 
-sqlite3 *database; // DB instance
+static sqlite3 *database; // DB instance
+data_control_provider_sql_cb *sql_callback; // data control callbacks
 int n_samples = 0;
 
 int opendb() {
@@ -46,6 +49,8 @@ int execute_query(char *sql, int (*callback)(void*, int, char**, char**)) {
 	} else {
 		dlog_print(DLOG_DEBUG, LOG_TAG, "query executed successfully");
 	}
+
+	// close the DB
 	sqlite3_close(database);
 	return error_code;
 }
@@ -94,4 +99,58 @@ int num_of_samples(int *num_of_samples) {
 		*num_of_samples = n_samples;
 	}
 	return error_code;
+}
+
+void select_request_cb(int request_id, data_control_h provider,
+		const char **column_list, int column_count, const char *where,
+		const char *order, void *user_data) {
+	sqlite3_stmt* sql_stmt = NULL;
+
+	// try to open DB connection
+	int error_code = opendb();
+	if (error_code != SQLITE_OK) {
+		data_control_provider_send_error(request_id, sqlite3_errmsg(database));
+		return;
+	}
+
+	// execute query
+	char* command = data_control_provider_create_select_statement(provider,
+			column_list, column_count, where, order);
+	error_code = sqlite3_prepare_v2(database, command, strlen(command),
+			&sql_stmt, NULL);
+	if (error_code != SQLITE_OK) {
+		data_control_provider_send_error(request_id, sqlite3_errmsg(database));
+	} else {
+		// return data
+		error_code = data_control_provider_send_select_result(request_id,
+				(void *) sql_stmt);
+		if (error_code != DATA_CONTROL_ERROR_NONE)
+			dlog_print(DLOG_ERROR, LOG_TAG,
+					"select_send_result failed with error: %d", error_code);
+		dlog_print(DLOG_INFO, LOG_TAG,
+				"select_request_cb send back result successfully");
+	}
+
+	// close the DB
+	sqlite3_close(database);
+	sqlite3_finalize(sql_stmt);
+	free(command);
+	return;
+}
+
+void initialize_datacontrol_provider() {
+	dlog_print(DLOG_INFO, LOG_TAG, "initialize_datacontrol_provider");
+	int result = init_db();
+	if (result != SQLITE_OK)
+		return;
+
+	sql_callback = (data_control_provider_sql_cb *) malloc(
+			sizeof(data_control_provider_sql_cb));
+	sql_callback->select_cb = select_request_cb;
+	result = data_control_provider_sql_register_cb(sql_callback, NULL);
+	if (result != DATA_CONTROL_ERROR_NONE)
+		dlog_print(DLOG_ERROR, LOG_TAG,
+				"data_control_provider_sql_register_cb failed with error: %d", result);
+	else
+		dlog_print(DLOG_INFO, LOG_TAG, "provider SQL register success");
 }
