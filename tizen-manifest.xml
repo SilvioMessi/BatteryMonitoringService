@@ -6,6 +6,7 @@
         <label>Battery Monitoring Service</label>
         <icon>batterymonitoringservice.png</icon>
         <datacontrol access="ReadOnly" providerid="http://batterymonitoringservice.com/datacontrol/provider/batterymonitoringservice" type="Sql"/>
+        <background-category value="sensor"/>
     </service-application>
     <privileges>
         <privilege>http://tizen.org/privilege/datasharing</privilege>
