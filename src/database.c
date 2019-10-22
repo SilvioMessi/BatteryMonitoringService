@@ -98,6 +98,9 @@ void select_request_cb(int request_id, data_control_h provider,
 		data_control_provider_send_error(request_id, sqlite3_errmsg(database));
 	} else {
 		// return data
+		/* If more than 20 rows are selected, only first 20 rows are included in select result. (WTF Tizen!)
+		 * This from the documentation of the data_control_sql_select() method, but it seems to be valid
+		 * also for the data_control_provider_send_select_result() method */
 		error_code = data_control_provider_send_select_result(request_id,
 				(void *) sql_stmt);
 		if (error_code != DATA_CONTROL_ERROR_NONE)

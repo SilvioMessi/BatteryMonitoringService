@@ -5,13 +5,14 @@
 #include <dlog.h>
 #include <device/battery.h>
 #include <time.h>
+#include <app_alarm.h>
 
 struct appdata {
-	Ecore_Timer *timer;
+	int alarm_id;
 };
 typedef struct appdata appdata_s;
 
-static Eina_Bool timeout_func(void *data) {
+void store_battery_info() {
 	time_t raw_time;
 	struct tm* time_info;
 	int error_code;
@@ -41,33 +42,29 @@ static Eina_Bool timeout_func(void *data) {
 	// log metrics
 	strftime(time_text, sizeof(time_text), "%Y-%m-%dT%H:%M:%S", time_info);
 	insert_sample(time_text, battery_percentage, battery_is_charging_int);
-	return ECORE_CALLBACK_RENEW;
+}
+
+bool init_alarm(appdata_s *ad) {
+	// check if the alarm already exist
+	if (ad->alarm_id == 0) {
+		// Although this is inexact, the alarm will not fire before this time
+		int DELAY = 1;
+		// This value does not guarantee the accuracy. The actual interval is calculated by the OS. The minimum value is 600sec
+		int REMIND = 600;
+		int alarm_id;
+		app_control_h app_control = NULL;
+		app_control_create(&app_control);
+		app_control_set_operation(app_control, APP_CONTROL_OPERATION_DEFAULT);
+		app_control_set_app_id(app_control,
+				"it.silviomessi.batterymonitoringservice");
+		alarm_schedule_after_delay(app_control, DELAY, REMIND, &alarm_id);
+		ad->alarm_id = alarm_id;
+	}
+	return true;
 }
 
 bool app_create(void *data) {
 	dlog_print(DLOG_DEBUG, LOG_TAG, "app_create");
-	appdata_s *ad = (appdata_s *) data;
-
-	/* ecore setup
-	 * to make ecore work on a real device I had to add the background category type sensor in the tizen-manifext.xmx
-	 * without it the timeout_func was called only once
-	 */
-	if (!ecore_init()) {
-		dlog_print(DLOG_ERROR, LOG_TAG, "cannot init ecore");
-		// if false is returned the app is terminated
-		return false;
-	}
-	if (ad->timer == NULL) {
-		Ecore_Timer *my_timer = ecore_timer_add(60 * 2, timeout_func, &ad);
-		if (my_timer != NULL) {
-			ad->timer = my_timer;
-			dlog_print(DLOG_DEBUG, LOG_TAG, "ecore timer successfully created");
-		} else {
-			dlog_print(DLOG_ERROR, LOG_TAG, "cannot create ecore timer");
-			return false;
-		}
-	}
-
 	// data control setup
 	initialize_datacontrol_provider();
 	return true;
@@ -75,13 +72,37 @@ bool app_create(void *data) {
 
 void app_control(app_control_h app_control, void *data) {
 	dlog_print(DLOG_DEBUG, LOG_TAG, "app_control");
+	appdata_s *ad = (appdata_s *) data;
+
+	/* the info about the battery are stored:
+	 * - first time the service is started
+	 * - when the alert open the service
+	 * - when the consumer application open the service
+	 */
+	store_battery_info();
+
+	/* setup the alarm here
+	 * if, for any reason, the alert has been removed let's create it again
+	 * TODO: what happen when the service is closed or the device is rebooted?
+	 */
+	init_alarm(ad);
+
+	// print alarm status
+	int error_code;
+	struct tm date;
+	time_t time_current;
+	error_code = alarm_get_scheduled_date(ad->alarm_id, &date);
+	if (error_code != ALARM_ERROR_NONE) {
+		dlog_print(DLOG_ERROR, LOG_TAG, "Get time Error: %d ", error_code);
+	} else {
+		time_current = mktime(&date);
+		dlog_print(DLOG_INFO, LOG_TAG, "Registered alarm: %d on date: %s",
+				ad->alarm_id, ctime(&time_current));
+	}
 }
 
 void app_terminate(void *data) {
 	dlog_print(DLOG_DEBUG, LOG_TAG, "app_terminate");
-	appdata_s *ad = (appdata_s *) data;
-	if (ad->timer)
-		ecore_timer_del(ad->timer);
 	return;
 }
 
